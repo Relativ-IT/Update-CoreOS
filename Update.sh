@@ -38,9 +38,11 @@ while [ $# -gt 0 ]; do
   shift
   shift
 done
+echo Looking for previous files
+jqverbose "$(cat $versions)"
 
 data="$streampath/$stream.json"
-echo "Checking updates from $stream stream from : $data"
+echo "Checking updates for $stream stream from : $data"
 
 echo "Looking for $artifact $arch release"
 data=$(curl --no-progress-meter $data | jq .architectures.$arch.artifacts.$artifact)
