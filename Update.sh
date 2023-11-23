@@ -72,9 +72,9 @@ then
     for try in {1..2} #let's try 2 times downloading with correct checksum
     do
       echo "Downloading $(jq -n "$fileinfo" | jq --raw-output .location) to $filename"
-      # curl -C - --no-progress-meter --parallel \
-      #   -o $filename $(jq -n "$fileinfo" | jq --raw-output .location) \
-      #   -o $filename.sig $(jq -n "$fileinfo" | jq --raw-output .signature) #Downloading fileinfo.location and .signature
+      curl -C - --no-progress-meter --parallel \
+        -o $filename $(jq -n "$fileinfo" | jq --raw-output .location) \
+        -o $filename.sig $(jq -n "$fileinfo" | jq --raw-output .signature) #Downloading fileinfo.location and .signature
       if echo "$(jq -n "$fileinfo" | jq --raw-output .sha256) $filename" | sha256sum --check && gpg --verify $filename.sig
         then
           break
@@ -83,7 +83,7 @@ then
       fi
     done
   done
-  # cat <<< $(jq --arg release $FCOSrelease '.'$stream'.'$arch'.'$artifact'.'$format' = $release' $versions) > $versions
+  cat <<< $(jq --arg release $FCOSrelease '.'$stream'.'$arch'.'$artifact'.'$format' = $release' $versions) > $versions
 else
   echo "Up to date, nothing to do"
 fi
