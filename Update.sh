@@ -40,7 +40,7 @@ while [ $# -gt 0 ]; do
 done
 
 data="$streampath/$stream.json"
-echo "Checking updates from $stream stream at : $data"
+echo "Checking updates from $stream stream from : $data"
 
 echo "Looking for $artifact $arch release"
 data=$(curl --no-progress-meter $data | jq .architectures.$arch.artifacts.$artifact)
@@ -75,6 +75,7 @@ then
       curl -C - --no-progress-meter --parallel \
         -o $filename $(jq -n "$fileinfo" | jq --raw-output .location) \
         -o $filename.sig $(jq -n "$fileinfo" | jq --raw-output .signature) #Downloading fileinfo.location and .signature
+      echo "Check sha256sum and GPG signature"
       if echo "$(jq -n "$fileinfo" | jq --raw-output .sha256) $filename" | sha256sum --check && gpg --verify $filename.sig
         then
           break
