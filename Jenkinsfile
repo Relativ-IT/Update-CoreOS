@@ -1,5 +1,3 @@
-def updated = false;
-
 pipeline {
   triggers {
     cron(env.BRANCH_NAME == 'main' ? 'H H * * 4' : '')
@@ -13,6 +11,7 @@ pipeline {
       ARTEFACTS_SERVER = credentials ('deployment-server')
       ARTEFACTS_PATH="/media/img/coreos"
       ARTEFACTS_VERSIONS = "coreos.json"
+      UPDATED = fileExists updated
   }
 
   stages {
@@ -109,19 +108,19 @@ pipeline {
             steps {
               sh '''
                 ./Update.sh --stream $STREAM --arch $ARCH --artifact $ARTIFACT --format $FORMAT --verbose true
+                if ls *.$STREAM; then touch updated; fi;
               '''
             }
           }
 
           stage("Upload Files") {
-            when { expression { return findFiles(glob: "*.${STREAM}").length > 0 } }
+            when { expression { UPDATED == 'true' }
             steps {
               sshagent(credentials: ['Jenkins-Key']) {
                 sh '''
                   echo uploading *.$STREAM files
                   scp *.$STREAM jenkins@$ARTEFACTS_SERVER:/media/img/coreos/
                 '''
-                script { updated = true }
               }
             }
           }
@@ -130,7 +129,7 @@ pipeline {
     }
 
     stage("Upload versions update") {
-      when { expression { updated == true } }
+      when { expression { UPDATED == 'true' }
       steps {
         sshagent(credentials: ['Jenkins-Key']) {
           sh '''
