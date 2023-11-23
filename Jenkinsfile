@@ -1,0 +1,158 @@
+def updated = false;
+
+pipeline {
+  triggers {
+    cron(env.BRANCH_NAME == 'main' ? 'H H * * 4' : '')
+  }
+
+  agent {
+    label 'Linux'
+  }
+
+  environment {
+      ARTEFACTS_SERVER = credentials ('deployment-server')
+      ARTEFACTS_PATH="/media/img/coreos"
+      ARTEFACTS_VERSIONS = "coreos.json"
+  }
+
+  stages {
+    stage('Initialize') {
+      parallel {
+        stage('Advertise start of build') {
+          steps {
+            slackSend color: "#4675b1", message: "${env.JOB_NAME} build #${env.BUILD_NUMBER} started :fire: (<${env.RUN_DISPLAY_URL}|Open>)"
+          }
+        }
+
+        stage('Print environments variables') {
+          steps {
+            sh 'printenv | sort'
+          }
+        }
+      }
+    }
+
+    stage('Set up prerequisites') {
+      parallel {
+        stage('Get ssh host key') {
+          steps {
+            sh '''
+              [ -d ~/.ssh ] || mkdir ~/.ssh && chmod 0700 ~/.ssh && touch ~/.ssh/known_hosts
+              if !(ssh-keygen -F $ARTEFACTS_SERVER)
+              then
+                ssh-keyscan -t ed25519 $ARTEFACTS_SERVER >> ~/.ssh/known_hosts
+              fi
+            '''
+          }
+        }
+
+        stage('Get fedora pgp keys') {
+          steps {
+            sh 'curl --no-progress-meter https://fedoraproject.org/fedora.gpg | gpg --import'
+          }
+        }
+
+        stage('Get last version') {
+          steps {
+            sshagent(credentials: ['Jenkins-Key']) {
+              sh '''
+                if ssh jenkins@$ARTEFACTS_SERVER ls $ARTEFACTS_PATH/$ARTEFACTS_VERSIONS
+                  then
+                    scp jenkins@$ARTEFACTS_SERVER:/$ARTEFACTS_PATH/$ARTEFACTS_VERSIONS ./$ARTEFACTS_VERSIONS
+                  fi
+              '''
+            }
+          }
+        }
+      }
+    }
+
+    stage("Download ... Upload") {
+      matrix {
+        axes { 
+          axis {
+            name 'STREAM'
+            values 'stable', 'next', 'testing'
+          }
+          axis {
+            name 'ARCH'
+            values 'x86_64', 'aarch64'
+          }
+          axis {
+            name 'ARTIFACT'
+            values 'metal'
+          }
+          axis {
+            name 'FORMAT'
+            values 'pxe'
+          }
+        }
+
+        excludes {
+          exclude {
+            axis {
+              name 'STREAM'
+              values 'testing'
+            }
+          }
+
+          exclude {
+            axis {
+              name 'ARCH'
+              values 'aarch64'
+            }
+          }
+        }
+
+        stages {
+          stage("Getting CoreOS artefacts") {
+            steps {
+              sh '''
+                ./Update.sh --stream $STREAM --arch $ARCH --artifact $ARTIFACT --format $FORMAT --verbose true
+              '''
+            }
+          }
+
+          stage("Upload Files") {
+            when { expression { return findFiles(glob: "*.${STREAM}").length > 0 } }
+            steps {
+              sshagent(credentials: ['Jenkins-Key']) {
+                sh '''
+                  echo uploading *.$STREAM files
+                  scp *.$STREAM jenkins@$ARTEFACTS_SERVER:/media/img/coreos/
+                '''
+                script { updated = true }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    stage("Upload versions update") {
+      when { expression { updated == true } }
+      steps {
+        sshagent(credentials: ['Jenkins-Key']) {
+          sh '''
+            scp ./$ARTEFACTS_VERSIONS jenkins@$ARTEFACTS_SERVER:/$ARTEFACTS_PATH/$ARTEFACTS_VERSIONS
+          '''
+          archiveArtifacts ARTEFACTS_VERSIONS
+        }
+      }
+    }
+  }
+
+  post {
+    success {
+      slackSend color: "#4675b1", message: "${env.JOB_NAME} successfully built :blue_heart: !"
+    }
+
+    failure {
+      slackSend color: "danger", message: "${env.JOB_NAME} build failed :poop: !"
+    }
+
+    cleanup {
+      cleanWs()
+    }
+  }
+}
