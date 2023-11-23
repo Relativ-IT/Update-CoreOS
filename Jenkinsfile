@@ -11,7 +11,7 @@ pipeline {
       ARTEFACTS_SERVER = credentials ('deployment-server')
       ARTEFACTS_PATH="/media/img/coreos"
       ARTEFACTS_VERSIONS = "coreos.json"
-      UPDATED = fileExists updated
+      UPDATED = fileExists 'updated'
   }
 
   stages {
@@ -114,7 +114,7 @@ pipeline {
           }
 
           stage("Upload Files") {
-            when { expression { UPDATED == 'true' }
+            when {expression { UPDATED == 'true' }}
             steps {
               sshagent(credentials: ['Jenkins-Key']) {
                 sh '''
@@ -129,7 +129,7 @@ pipeline {
     }
 
     stage("Upload versions update") {
-      when { expression { UPDATED == 'true' }
+      when {expression { UPDATED == 'true' }}
       steps {
         sshagent(credentials: ['Jenkins-Key']) {
           sh '''
