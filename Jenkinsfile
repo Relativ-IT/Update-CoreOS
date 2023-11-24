@@ -112,7 +112,7 @@ pipeline {
           }
 
           stage("Upload Files") {
-            when { expression { fileExists('$FORMAT.$ARTIFACT.$ARCH.$STREAM') } }
+            when { expression { fileExists("${FORMAT}.${ARTIFACT}.${ARCH}.${STREAM}") } }
             steps {
               sshagent(credentials: ['Jenkins-Key']) {
                 sh '''
