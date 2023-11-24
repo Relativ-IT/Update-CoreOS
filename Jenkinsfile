@@ -107,19 +107,20 @@ pipeline {
             steps {
               sh '''
                 ./Update.sh --stream $STREAM --arch $ARCH --artifact $ARTIFACT --format $FORMAT --verbose true
-                if ls *.$STREAM; then touch updated; fi;
               '''
             }
           }
 
           stage("Upload Files") {
-            when { expression { fileExists('updated') } }
+            when { expression { fileExists('$FORMAT.$ARTIFACT.$ARCH.$STREAM') } }
             steps {
               sshagent(credentials: ['Jenkins-Key']) {
                 sh '''
-                  echo uploading *.$STREAM files
-                  scp *.$STREAM jenkins@$ARTEFACTS_SERVER:/media/img/coreos/
+                  files=$(cat $FORMAT.$ARTIFACT.$ARCH.$STREAM)
+                  echo uploading $FORMAT.$ARTIFACT.$ARCH.$STREAM files
+                  scp $files jenkins@$ARTEFACTS_SERVER:/media/img/coreos/
                 '''
+                sh 'touch updated'
               }
             }
           }

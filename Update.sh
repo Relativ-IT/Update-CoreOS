@@ -8,7 +8,7 @@ stream="stable"
 arch="x86_64"
 artifact="metal"
 format="pxe"
-versions='coreos.json'
+history='coreos.json'
 streampath='https://builds.coreos.fedoraproject.org/streams'
 verbose=false
 
@@ -29,6 +29,9 @@ while [ $# -gt 0 ]; do
     -v|--verbose)
       verbose="$2"
       ;;
+    -h|--history)
+      history="$2"
+      ;;
     *)
       printf "***************************\n"
       printf "* Error: Invalid argument.*\n"
@@ -38,8 +41,9 @@ while [ $# -gt 0 ]; do
   shift
   shift
 done
+
 echo Looking for previous files
-jqverbose "$(cat $versions)"
+jqverbose "$(cat $history)"
 
 data="$streampath/$stream.json"
 echo "Checking updates for $stream stream from : $data"
@@ -49,14 +53,13 @@ data=$(curl --no-progress-meter $data | jq .architectures.$arch.artifacts.$artif
 jqverbose "${data}"
 
 FCOSrelease=$(jq -n "$data" | jq --raw-output .release)
-FCOSversion=$(jq --raw-output .$stream.$arch.$artifact.$format $versions)
+FCOSversion=$(jq --raw-output .$stream.$arch.$artifact.$format $history)
 
-if [ "${FCOSversion}" = "null" ]
-then
-  FCOSversion=0
-fi
+if [ "${FCOSversion}" = "null" ]; then FCOSversion=0; fi;
 
 echo FCOSrelease: $FCOSrelease / FCOSversion: $FCOSversion
+
+failed=false
 
 if $(jq -n "$data" | jq --raw-output --arg version $FCOSversion '.release > $version')
 then
@@ -80,13 +83,21 @@ then
       echo "Check sha256sum and GPG signature"
       if echo "$(jq -n "$fileinfo" | jq --raw-output .sha256) $filename" | sha256sum --check && gpg --verify $filename.sig
         then
+          echo $filename >> $format.$artifact.$arch.$stream
           break
         else
           rm $filename $filename.sig
       fi
+      failed=true
+
     done
   done
-  cat <<< $(jq --arg release $FCOSrelease '.'$stream'.'$arch'.'$artifact'.'$format' = $release' $versions) > $versions
+
+  if ! $failed
+  then
+    cat <<< $(jq --arg release $FCOSrelease '.'$stream'.'$arch'.'$artifact'.'$format' = $release' $history) > $history
+  fi
+
 else
   echo "Up to date, nothing to do"
 fi
