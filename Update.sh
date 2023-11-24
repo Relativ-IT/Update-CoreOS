@@ -88,7 +88,8 @@ then
         else
           rm $filename $filename.sig
       fi
-      failed=true
+      
+      if [ try == 2 ]; then failed=true; fi;
 
     done
   done
