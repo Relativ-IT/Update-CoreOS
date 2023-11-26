@@ -47,11 +47,11 @@ jqverbose "Looking for previous files :" "$(cat $history)"
 data="$streampath/$stream.json"
 echo "Checking updates for $stream stream from : $data"
 
-data=$(curl --no-progress-meter $data | jq .architectures.$arch.artifacts.$artifact)
+data=$(curl --no-progress-meter $data | jq .architectures.$arch.artifacts.$artifact) # Filtering Arch & Artifatct
 jqverbose "Looking for $artifact $arch release :" "$data"
 
-FCOSrelease=$(jq -n "$data" | jq --raw-output .release)
-FCOSversion=$(jq --raw-output .$stream.$arch.$artifact.$format $history)
+FCOSrelease=$(jq -n "$data" | jq --raw-output .release) # Filtering release version
+FCOSversion=$(jq --raw-output .$stream.$arch.$artifact.$format $history) # Filtering current/last version
 
 if [ "${FCOSversion}" = "null" ]; then FCOSversion=0; fi;
 
@@ -73,7 +73,7 @@ then
     fileinfo=$(jq -n "$files" | jq .$file) #filtering each file informations
     jqverbose "#$filecounter $file :" "$fileinfo"
 
-    for try in {1..2} #let's try 2 times downloading with correct checksum/gpg
+    for try in {1..2} # Let's try 2 times downloading with correct checksum/gpg
     do
 
       echo "Downloading $(jq -n "$fileinfo" | jq --raw-output .location) to $filename"
@@ -83,20 +83,20 @@ then
 
       echo "Checking sha256sum and GPG signature"
       if echo "$(jq -n "$fileinfo" | jq --raw-output .sha256) $filename" | sha256sum --check && gpg --verify $filename.sig
-        then
-          echo $filename >> $downloads.part
-          rm $filename.sig
+        then # GPG & SHASUM are ok
+          echo $filename >> $downloads.part # Add downloaded file to history
+          rm $filename.sig # del signature file that is not needed anymore
           break
         else
-          rm $filename $filename.sig
+          rm $filename $filename.sig # restart from beginning
       fi
-    done
-  done
+    done # End for try
+  done # End for file
 
   if [[ -f $downloads.part ]] && [[ $(wc -l < $downloads.part) == $filecounter ]]
-  then # All files wwas successfully downloaded and checked
+  then # All files were successfully downloaded and checked
     mv $downloads.part $downloads
-    cat <<< $(jq --arg release $FCOSrelease '.'$stream'.'$arch'.'$artifact'.'$format' = $release' $history) > $history
+    cat <<< $(jq --arg release $FCOSrelease '.'$stream'.'$arch'.'$artifact'.'$format' = $release' $history) > $history # Updating history file
   fi
 
 else
