@@ -1,7 +1,7 @@
 #!/bin/bash
 
 jqverbose() {
-  if $verbose; then echo $1 | jq; fi;
+  if $verbose; then echo $1; echo $2 | jq; fi;
 }
 
 stream="stable"
@@ -42,41 +42,38 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-echo Looking for previous files
-jqverbose "$(cat $history)"
+jqverbose "Looking for previous files :" "$(cat $history)"
 
 data="$streampath/$stream.json"
 echo "Checking updates for $stream stream from : $data"
 
-echo "Looking for $artifact $arch release"
 data=$(curl --no-progress-meter $data | jq .architectures.$arch.artifacts.$artifact)
-jqverbose "${data}"
+jqverbose "Looking for $artifact $arch release :" "$data"
 
 FCOSrelease=$(jq -n "$data" | jq --raw-output .release)
 FCOSversion=$(jq --raw-output .$stream.$arch.$artifact.$format $history)
 
 if [ "${FCOSversion}" = "null" ]; then FCOSversion=0; fi;
 
-echo FCOSrelease: $FCOSrelease / FCOSversion: $FCOSversion
+echo FCOS release: $FCOSrelease / FCOS version: $FCOSversion
 
-if $(jq -n "$data" | jq --raw-output --arg version $FCOSversion '.release > $version')
+if $(jq -n "$data" | jq --raw-output --arg version $FCOSversion '.release > $version') # Check for updates
 then
-
-  echo "Looking for $format files"
+  
+  downloads=$format.$artifact.$arch.$stream
   files=$(jq -n "$data" | jq .formats.$format) #filtering $format files version
-  jqverbose "${files}"
+  jqverbose "Update found for $format files :" "$files"
   filecounter=0
 
   for file in $(jq -n "$files" | jq --raw-output 'keys[]') #downloading all files
   do
 
     let filecounter+=1
-    echo "Looking for file #$filecounter : $file"
     filename="$file.$format.$artifact.$arch.$stream"
     fileinfo=$(jq -n "$files" | jq .$file) #filtering each file informations
-    jqverbose "${fileinfo}"
+    jqverbose "#$filecounter $file :" "$fileinfo"
 
-    for try in {1..2} #let's try 2 times downloading with correct checksum
+    for try in {1..2} #let's try 2 times downloading with correct checksum/gpg
     do
 
       echo "Downloading $(jq -n "$fileinfo" | jq --raw-output .location) to $filename"
@@ -84,10 +81,10 @@ then
         -o $filename $(jq -n "$fileinfo" | jq --raw-output .location) \
         -o $filename.sig $(jq -n "$fileinfo" | jq --raw-output .signature) #Downloading fileinfo.location and .signature
 
-      echo "Check sha256sum and GPG signature"
+      echo "Checking sha256sum and GPG signature"
       if echo "$(jq -n "$fileinfo" | jq --raw-output .sha256) $filename" | sha256sum --check && gpg --verify $filename.sig
         then
-          echo $filename >> $format.$artifact.$arch.$stream.part
+          echo $filename >> $downloads.part
           rm $filename.sig
           break
         else
@@ -96,13 +93,12 @@ then
     done
   done
 
-  if [[ -f $format.$artifact.$arch.$stream.part ]] then
-    if [[ $(wc -l < $format.$artifact.$arch.$stream.part) == $filecounter ]]
-    then
-      mv $format.$artifact.$arch.$stream.part $format.$artifact.$arch.$stream
-      cat <<< $(jq --arg release $FCOSrelease '.'$stream'.'$arch'.'$artifact'.'$format' = $release' $history) > $history
-    fi
+  if [[ -f $downloads.part ]] && [[ $(wc -l < $downloads.part) == $filecounter ]]
+  then # All files wwas successfully downloaded and checked
+    mv $downloads.part $downloads
+    cat <<< $(jq --arg release $FCOSrelease '.'$stream'.'$arch'.'$artifact'.'$format' = $release' $history) > $history
   fi
+
 else
   echo "Up to date, nothing to do"
 fi
