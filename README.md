@@ -20,11 +20,12 @@ Options are, space delimited : (e.g.: `./Update.sh -v true`)
 - `-s` or `--stream` usually: stable, testing or next -> défault : `stable`
 - `-a` or `--arch` usually: aarch64, ppc64le, s390x, x86_64 -> default: `x86_64`
 - `-t` or `--artifact` ouch ! aliyun, aws, azure, azurestack, digitalocean, exoscale, gcp, hyperv, ibmcloud, kubevirt, metal, nutanix, openstack, qemu, irtualbox, vmware, vultr... and so on depending previous choices -> default : `metal`
-- `-f` or `--format`Arrgh ! Really depending of previous choices -> default : `pxe`
+- `-f` or `--format` Arrgh ! Really depending of previous choices -> default : `pxe`
 - `-v` or `--verbose` If ever you want to see well formatted json output -> default : `false`
-- `-h` or `--history`default file path to `coreos.json` that must at least contains `{}`data, there's no error check for this option !
+- `-h` or `--history` default file path to `coreos.json` that must at least contains `{}` data, there's no error check for this option !
 
 It will ouput artefacts, GPG and SHASUM checked, and a file named as `$format.$artifact.$arch.$stream` that contains the list of downloaded files for later use .. or not
+
 `coreos.json`/`--history` file will be updated with version number from released/downloaded artefacts to remember last updates
 
 ## Jenkinsfile

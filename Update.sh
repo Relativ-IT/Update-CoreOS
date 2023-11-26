@@ -59,46 +59,50 @@ if [ "${FCOSversion}" = "null" ]; then FCOSversion=0; fi;
 
 echo FCOSrelease: $FCOSrelease / FCOSversion: $FCOSversion
 
-failed=false
-
 if $(jq -n "$data" | jq --raw-output --arg version $FCOSversion '.release > $version')
 then
+
   echo "Looking for $format files"
   files=$(jq -n "$data" | jq .formats.$format) #filtering $format files version
   jqverbose "${files}"
+  filecounter=0
+
   for file in $(jq -n "$files" | jq --raw-output 'keys[]') #downloading all files
   do
 
-    echo "Looking for $file"
+    let filecounter+=1
+    echo "Looking for file #$filecounter : $file"
     filename="$file.$format.$artifact.$arch.$stream"
     fileinfo=$(jq -n "$files" | jq .$file) #filtering each file informations
     jqverbose "${fileinfo}"
 
     for try in {1..2} #let's try 2 times downloading with correct checksum
     do
+
       echo "Downloading $(jq -n "$fileinfo" | jq --raw-output .location) to $filename"
       curl -C - --no-progress-meter --parallel \
         -o $filename $(jq -n "$fileinfo" | jq --raw-output .location) \
         -o $filename.sig $(jq -n "$fileinfo" | jq --raw-output .signature) #Downloading fileinfo.location and .signature
+
       echo "Check sha256sum and GPG signature"
       if echo "$(jq -n "$fileinfo" | jq --raw-output .sha256) $filename" | sha256sum --check && gpg --verify $filename.sig
         then
-          echo $filename >> $format.$artifact.$arch.$stream
+          echo $filename >> $format.$artifact.$arch.$stream.part
+          rm $filename.sig
           break
         else
           rm $filename $filename.sig
       fi
-      
-      if [ try == 2 ]; then failed=true; fi;
-
     done
   done
 
-  if ! $failed
-  then
-    cat <<< $(jq --arg release $FCOSrelease '.'$stream'.'$arch'.'$artifact'.'$format' = $release' $history) > $history
+  if [[ -f $format.$artifact.$arch.$stream.part ]] then
+    if [[ $(wc -l < $format.$artifact.$arch.$stream.part) == $filecounter ]]
+    then
+      mv $format.$artifact.$arch.$stream.part $format.$artifact.$arch.$stream
+      cat <<< $(jq --arg release $FCOSrelease '.'$stream'.'$arch'.'$artifact'.'$format' = $release' $history) > $history
+    fi
   fi
-
 else
   echo "Up to date, nothing to do"
 fi

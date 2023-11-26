@@ -1,3 +1,5 @@
+def updated = false;
+
 pipeline {
   triggers {
     cron(env.BRANCH_NAME == 'main' ? 'H H * * 4' : '')
@@ -120,7 +122,7 @@ pipeline {
                   echo uploading $FORMAT.$ARTIFACT.$ARCH.$STREAM files
                   scp $files jenkins@$ARTEFACTS_SERVER:/media/img/coreos/
                 '''
-                sh 'touch updated'
+                script { updated = true }
               }
             }
           }
@@ -129,7 +131,7 @@ pipeline {
     }
 
     stage("Upload versions update") {
-      when { expression { fileExists('updated') } }
+      when { expression { updated == true } }
       steps {
         sshagent(credentials: ['Jenkins-Key']) {
           sh '''
