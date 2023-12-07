@@ -48,7 +48,7 @@ data="$streampath/$stream.json"
 echo "Checking updates for $stream stream from : $data"
 
 data=$(curl --no-progress-meter $data | jq .architectures.$arch.artifacts.$artifact) # Filtering Arch & Artifatct
-jqverbose "Looking for $artifact $arch release :" "$data"
+jqverbose "Looking for $arch $artifact release :" "$data"
 
 FCOSrelease=$(jq -n "$data" | jq --raw-output .release) # Filtering release version
 FCOSversion=$(jq --raw-output .$stream.$arch.$artifact.$format $history) # Filtering current/last version
