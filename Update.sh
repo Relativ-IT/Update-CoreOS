@@ -45,7 +45,7 @@ done
 jqverbose "Looking for previous files :" "$(cat $history)"
 
 data="$streampath/$stream.json"
-echo "Checking updates for $stream stream from : $data"
+echo "Checking $stream stream updates from : $data"
 
 data=$(curl --no-progress-meter $data | jq .architectures.$arch.artifacts.$artifact) # Filtering Arch & Artifatct
 jqverbose "Looking for $arch $artifact release :" "$data"
