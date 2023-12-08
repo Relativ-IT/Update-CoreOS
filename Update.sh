@@ -50,39 +50,39 @@ echo "Checking $stream stream updates from : $data"
 data=$(curl --no-progress-meter $data | jq .architectures.$arch.artifacts.$artifact) # Filtering Arch & Artifatct
 jqverbose "Looking for $arch $artifact release :" "$data"
 
-FCOSrelease=$(jq -n "$data" | jq --raw-output .release) # Filtering release version
+FCOSrelease=$(echo $data | jq --raw-output .release) # Filtering release version
 FCOSversion=$(jq --raw-output .$stream.$arch.$artifact.$format $history) # Filtering current/last version
 
 if [ "${FCOSversion}" = "null" ]; then FCOSversion=0; fi;
 
 echo FCOS release: $FCOSrelease / FCOS version: $FCOSversion
 
-if $(jq -n "$data" | jq --raw-output --arg version $FCOSversion '.release > $version') # Check for updates
+if $(echo $data | jq --raw-output --arg version $FCOSversion '.release > $version') # Check for updates
 then
   
   downloads=$format.$artifact.$arch.$stream
-  files=$(jq -n "$data" | jq .formats.$format) #filtering $format files version
+  files=$(echo $data | jq .formats.$format) #filtering $format files version
   jqverbose "Update found for $format files :" "$files"
   filecounter=0
 
-  for file in $(jq -n "$files" | jq --raw-output 'keys[]') #downloading all files
+  for file in $(echo $files | jq --raw-output 'keys[]') #downloading all files
   do
 
     let filecounter+=1
     filename="$file.$format.$artifact.$arch.$stream"
-    fileinfo=$(jq -n "$files" | jq .$file) #filtering each file informations
+    fileinfo=$(echo $files | jq .$file) #filtering each file informations
     jqverbose "#$filecounter $file :" "$fileinfo"
 
     for try in {1..2} # Let's try 2 times downloading with correct checksum/gpg
     do
 
-      echo "Downloading $(jq -n "$fileinfo" | jq --raw-output .location) to $filename"
+      echo "Downloading $(echo $fileinfo | jq --raw-output .location) to $filename"
       curl -C - --no-progress-meter --parallel \
-        -o $filename $(jq -n "$fileinfo" | jq --raw-output .location) \
-        -o $filename.sig $(jq -n "$fileinfo" | jq --raw-output .signature) #Downloading fileinfo.location and .signature
+        -o $filename $(echo $fileinfo | jq --raw-output .location) \
+        -o $filename.sig $(echo $fileinfo | jq --raw-output .signature) #Downloading fileinfo.location and .signature
 
       echo "Checking sha256sum and GPG signature"
-      if echo "$(jq -n "$fileinfo" | jq --raw-output .sha256) $filename" | sha256sum --check && gpg --verify $filename.sig
+      if echo "$(echo $fileinfo | jq --raw-output .sha256) $filename" | sha256sum --check && gpg --verify $filename.sig
         then # GPG & SHASUM are ok
           echo $filename >> $downloads.part # Add downloaded file to history
           rm $filename.sig # del signature file that is not needed anymore
