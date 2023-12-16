@@ -1,8 +1,6 @@
 #!/bin/bash
 
-jqverbose() {
-  if $verbose; then echo $1; echo $2 | jq; fi;
-}
+function jqverbose { if $verbose; then echo $1; echo $2 | jq; fi; }
 
 stream="stable"
 arch="x86_64"
@@ -47,13 +45,13 @@ jqverbose "Looking for previous files :" "$(cat $history)"
 data="$streampath/$stream.json"
 echo "Checking $stream stream updates from : $data"
 
-data=$(curl --no-progress-meter $data | jq .architectures.$arch.artifacts.$artifact) # Filtering Arch & Artifatct
+data=$(curl --no-progress-meter $data | jq .architectures.$arch.artifacts.$artifact) # Downloading and then Filtering Arch & Artifatct
 jqverbose "Looking for $arch $artifact release :" "$data"
 
-FCOSrelease=$(echo $data | jq --raw-output .release) # Filtering release version
-FCOSversion=$(jq --raw-output .$stream.$arch.$artifact.$format $history) # Filtering current/last version
+FCOSrelease=$(echo $data | jq --raw-output .release) # Filtering new release version
+FCOSversion=$(jq --raw-output .$stream.$arch.$artifact.$format $history) # Filtering current/last local version
 
-if [ "${FCOSversion}" = "null" ]; then FCOSversion=0; fi;
+if [ "${FCOSversion}" = "null" ]; then FCOSversion=0; fi; # If no previous version was found, set it to 0 for later comparison
 
 echo FCOS release: $FCOSrelease / FCOS version: $FCOSversion
 
@@ -76,10 +74,13 @@ then
     for try in {1..2} # Let's try 2 times downloading with correct checksum/gpg
     do
 
-      echo "Downloading $(echo $fileinfo | jq --raw-output .location) to $filename"
+      upstreamfile=$(echo $fileinfo | jq --raw-output .location) # Filtering upstream file location
+      upstreamsig=$(echo $fileinfo | jq --raw-output .signature) # Filtering upstream file signature
+
+      echo "Downloading $upstreamfile to $filename"
       curl -C - --no-progress-meter --parallel \
-        -o $filename $(echo $fileinfo | jq --raw-output .location) \
-        -o $filename.sig $(echo $fileinfo | jq --raw-output .signature) #Downloading fileinfo.location and .signature
+        $upstreamfile -o $filename  \
+        $upstreamsig -o $filename.sig  # Downloading file and its signature
 
       echo "Checking sha256sum and GPG signature"
       if echo "$(echo $fileinfo | jq --raw-output .sha256) $filename" | sha256sum --check && gpg --verify $filename.sig
@@ -98,6 +99,8 @@ then
     mv $downloads.part $downloads
     cat <<< $(jq --arg release $FCOSrelease '.'$stream'.'$arch'.'$artifact'.'$format' = $release' $history) > $history # Updating history file
     jqverbose "Updated versions :" "$(cat $history)"
+  else
+    echo "Something went wrong :/"
   fi
 
 else
