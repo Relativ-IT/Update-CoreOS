@@ -53,22 +53,24 @@ FCOSversion=$(jq --raw-output .$stream.$arch.$artifact.$format $history) # Filte
 
 if [ "${FCOSversion}" = "null" ]; then FCOSversion=0; fi; # If no previous version was found, set it to 0 for later comparison
 
-echo FCOS release: $FCOSrelease / FCOS version: $FCOSversion
+echo FCOS release : $FCOSrelease / FCOS version : $FCOSversion
 
 if $(echo $data | jq --raw-output --arg version $FCOSversion '.release > $version') # Check for updates
 then
   
-  downloads=$format.$artifact.$arch.$stream
-  files=$(echo $data | jq .formats.$format) #filtering $format files version
-  jqverbose "Update found for $format files :" "$files"
   filecounter=0
+  downloads=$format.$artifact.$arch.$stream
+  touch $downloads.part
+  truncate -s 0 $downloads.part
+  files=$(echo $data | jq .formats.$format) # Filtering $format files version
+  jqverbose "Update found for $format files :" "$files"
 
-  for file in $(echo $files | jq --raw-output 'keys[]') #downloading all files
+  for file in $(echo $files | jq --raw-output 'keys[]') # For each file definition
   do
 
     let filecounter+=1
     filename="$file.$format.$artifact.$arch.$stream"
-    fileinfo=$(echo $files | jq .$file) #filtering each file informations
+    fileinfo=$(echo $files | jq .$file) # Filtering file informations
     jqverbose "#$filecounter $file :" "$fileinfo"
 
     for try in {1..2} # Let's try 2 times downloading with correct checksum/gpg
@@ -79,17 +81,17 @@ then
 
       echo "Downloading $upstreamfile to $filename"
       curl -C - --no-progress-meter --parallel \
-        $upstreamfile -o $filename  \
-        $upstreamsig -o $filename.sig  # Downloading file and its signature
+        $upstreamfile -o $filename \
+        $upstreamsig -o $filename.sig # Downloading file and its signature
 
       echo "Checking sha256sum and GPG signature"
       if echo "$(echo $fileinfo | jq --raw-output .sha256) $filename" | sha256sum --check && gpg --verify $filename.sig
         then # GPG & SHASUM are ok
           echo $filename >> $downloads.part # Add downloaded file to history
-          rm $filename.sig # del signature file that is not needed anymore
+          rm $filename.sig # Del signature file that is not needed anymore
           break
         else
-          rm $filename $filename.sig # restart from beginning
+          rm $filename $filename.sig # Restart from beginning
       fi
     done # End for try
   done # End for file
@@ -101,6 +103,7 @@ then
     jqverbose "Updated versions :" "$(cat $history)"
   else
     echo "Something went wrong :/"
+    rm $downloads.part
   fi
 
 else
