@@ -31,9 +31,7 @@ while [ $# -gt 0 ]; do
       history="$2"
       ;;
     *)
-      printf "***************************\n"
-      printf "* Error: Invalid argument.*\n"
-      printf "***************************\n"
+      printf "Error: Invalid argument : $1 \n"
       exit 1
   esac
   shift
@@ -78,6 +76,7 @@ then
 
       upstreamfile=$(echo $fileinfo | jq --raw-output .location) # Filtering upstream file location
       upstreamsig=$(echo $fileinfo | jq --raw-output .signature) # Filtering upstream file signature
+      upstreamsha256=$(echo $fileinfo | jq --raw-output .sha256) # Filtering upstream sha256 sum
 
       echo "Downloading $upstreamfile to $filename"
       curl -C - --no-progress-meter --parallel \
@@ -85,7 +84,7 @@ then
         $upstreamsig -o $filename.sig # Downloading file and its signature
 
       echo "Checking sha256sum and GPG signature"
-      if echo "$(echo $fileinfo | jq --raw-output .sha256) $filename" | sha256sum --check && gpg --verify $filename.sig
+      if echo "$upstreamsha256 $filename" | sha256sum --check && gpg --verify $filename.sig
         then # GPG & SHASUM are ok
           echo $filename >> $downloads.part # Add downloaded file to history
           rm $filename.sig # Del signature file that is not needed anymore

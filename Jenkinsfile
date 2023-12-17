@@ -107,9 +107,7 @@ pipeline {
         stages {
           stage("Getting CoreOS artefacts") {
             steps {
-              sh '''
-                ./Update.sh --stream $STREAM --arch $ARCH --artifact $ARTIFACT --format $FORMAT --history $ARTEFACTS_VERSIONS --verbose true
-              '''
+              sh './Update.sh --stream $STREAM --arch $ARCH --artifact $ARTIFACT --format $FORMAT --history $ARTEFACTS_VERSIONS --verbose true'
             }
           }
 
