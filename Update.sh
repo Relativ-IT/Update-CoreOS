@@ -50,8 +50,7 @@ FCOSrelease=$(echo $data | jq --raw-output .release) # Filtering new release ver
 FCOSversion=$(jq --raw-output .$stream.$arch.$artifact.$format $history) # Filtering current/last local version
 
 if [ "${FCOSversion}" = "null" ]; then FCOSversion=0; fi; # If no previous version was found, set it to 0 for later comparison
-
-echo FCOS $stream $arch $artifact $format release : $FCOSrelease / version : $FCOSversion
+echo FCOS $arch $artifact release : $FCOSrelease / version : $FCOSversion
 
 if $(echo $data | jq --raw-output --arg version $FCOSversion '.release > $version') # Check for updates
 then
