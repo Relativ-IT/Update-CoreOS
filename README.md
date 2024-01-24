@@ -9,9 +9,12 @@ Let me describe this **WIP** repo ...
 
 ## Update.sh
 
-**dependency** : You must have [`jq`](https://jqlang.github.io/jq/) installed
+**dependencies** :
 
-A simple bash script, that relatively fit the need, that allow to download CoreOS artefacts.
+- [`jq`](https://jqlang.github.io/jq/)
+- gpg and fedora signing keys (`curl --no-progress-meter https://fedoraproject.org/fedora.gpg | gpg --import`)
+
+A simple bash script, that Relatively fit the need, that allow to download CoreOS artefacts.
 This script was firstly intended to manually download `x86_64/metal/pxe` artefacts for my home lab (defaults option values)
 I ended to make it more "agnostic" and "automation fitted" to allow downloading needed artefacts (with options)
 
@@ -22,9 +25,11 @@ Options are, space delimited : (e.g.: `./Update.sh -v true`)
 - `-t` or `--artifact` ouch ! aliyun, aws, azure, azurestack, digitalocean, exoscale, gcp, hyperv, ibmcloud, kubevirt, metal, nutanix, openstack, qemu, irtualbox, vmware, vultr... and so on depending previous choices -> default : `metal`
 - `-f` or `--format` Arrgh ! Really depending of previous choices -> default : `pxe`
 - `-v` or `--verbose` If ever you want to see well formatted json output -> default : `false`
-- `-h` or `--history` default file path to `coreos.json` that must at least contains `{}` data, there's no error check for this option !
+- `-h` or `--history` default file path to `coreos.json` that must at least contains `{}` data
 
-It will ouput artefacts, GPG and SHASUM checked, and a file named as `$format.$artifact.$arch.$stream` that contains the list of downloaded files for later use .. or not
+There's no error check for these options ! You must know what you want ^^
+
+It will ouput artefacts, GPG and SHASUM checked, and a file named as `$format.$artifact.$arch.$stream` that contains the list of downloaded files for later use ... or not
 
 `coreos.json`/`--history` file will be updated with version number from released/downloaded artefacts to remember last updates
 
@@ -36,7 +41,7 @@ The "end user" of `Update.sh` :
 - Will get latest history file from artefact server (the PXE/TFTP server)
 - Will `matrix` `Update.sh` options in order to use it and ...
 - Will get downloads from `Update.sh` and upload them to PXE/TFTP server via ssh
-- And save `--history` file to keep in memory of latest downloaded artefacts versions
+- And save `--history` file to keep in memory the latest downloaded artefacts versions
 
 ## coreos.json
 
@@ -44,4 +49,4 @@ The f**g empty template of all things ! that's all we need to know :relaxed:
 
 ## TODO
 
-send reboot cmd to servers that depend on PXE artefacts
+send reboot cmd to servers that depend on PXE artefacts ... or make them look for an updated version on artefact server ^^
