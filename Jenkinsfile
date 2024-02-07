@@ -56,9 +56,11 @@ pipeline {
           steps {
             sshagent(credentials: ['Jenkins-Key']) {
               sh '''
-                if ssh jenkins@$ARTEFACTS_SERVER ls $ARTEFACTS_PATH/$ARTEFACTS_VERSIONS
+                if scp jenkins@$ARTEFACTS_SERVER:/$ARTEFACTS_PATH/$ARTEFACTS_VERSIONS ./$ARTEFACTS_VERSIONS
                   then
-                    scp jenkins@$ARTEFACTS_SERVER:/$ARTEFACTS_PATH/$ARTEFACTS_VERSIONS ./$ARTEFACTS_VERSIONS
+                    echo "History found"
+                  else
+                    echo "History not found"
                   fi
               '''
             }
