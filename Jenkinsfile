@@ -2,7 +2,7 @@ def updated = false;
 
 pipeline {
   triggers {
-    cron(env.BRANCH_NAME == 'main' ? 'H H * * 4' : '')
+    cron(env.BRANCH_NAME == 'main' ? 'H H * * 3' : '')
   }
 
   agent {
