@@ -24,7 +24,7 @@ pipeline {
 
         stage('Print environments variables') {
           steps {
-            script{ env.updated = false }
+            script{ env.Updated = false }
             sh 'printenv | sort'
           }
         }
@@ -121,7 +121,7 @@ pipeline {
                   echo uploading $FORMAT.$ARTIFACT.$ARCH.$STREAM files
                   scp $files jenkins@$ARTEFACTS_SERVER:/media/img/coreos/
                 '''
-                script { env.updated = true }
+                script { env.Updated = true }
               }
             }
           }
@@ -130,7 +130,7 @@ pipeline {
     }
 
     stage("Upload versions update") {
-      when { expression { env.updated == true } }
+      when { expression { env.Updated == true } }
       steps {
         sshagent(credentials: ['Jenkins-Key']) {
           sh '''
