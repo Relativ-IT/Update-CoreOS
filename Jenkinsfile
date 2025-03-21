@@ -1,6 +1,4 @@
-script {
-    def updated = false
-}
+def updated = false;
 
 pipeline {
   triggers {
