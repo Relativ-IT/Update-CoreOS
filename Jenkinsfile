@@ -122,7 +122,7 @@ pipeline {
                   echo uploading $FORMAT.$ARTIFACT.$ARCH.$STREAM files
                   scp $files jenkins@$ARTEFACTS_SERVER:/media/img/coreos/
                 '''
-                script { def updated = true }
+                script { updated = true }
               }
             }
           }
