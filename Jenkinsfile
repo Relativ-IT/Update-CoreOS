@@ -9,7 +9,7 @@ pipeline {
 
   environment {
       ARTEFACTS_SERVER = credentials ('deployment-server')
-      ARTEFACTS_PATH="/media/img/coreos"
+      ARTEFACTS_PATH = "/media/img/coreos"
       ARTEFACTS_VERSIONS = "coreos.json"
   }
 
