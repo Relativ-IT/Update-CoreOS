@@ -24,7 +24,7 @@ pipeline {
 
         stage('Print environments variables') {
           steps {
-            env.updated = false
+            script{ env.updated = false }
             sh 'printenv | sort'
           }
         }
