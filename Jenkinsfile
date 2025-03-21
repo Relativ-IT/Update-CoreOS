@@ -1,4 +1,4 @@
-def updated = false;
+Boolean updated = false;
 
 pipeline {
   triggers {
