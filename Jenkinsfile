@@ -1,5 +1,3 @@
-Boolean updated = false;
-
 pipeline {
   triggers {
     cron(env.BRANCH_NAME == 'main' ? 'H H * * 3' : '')
@@ -10,6 +8,8 @@ pipeline {
   }
 
   environment {
+      Boolean updated = false
+
       ARTEFACTS_SERVER = credentials ('deployment-server')
       ARTEFACTS_PATH="/media/img/coreos"
       ARTEFACTS_VERSIONS = "coreos.json"
