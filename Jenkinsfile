@@ -1,4 +1,6 @@
-// def updated = false;
+script {
+    def updated = false
+}
 
 pipeline {
   triggers {
@@ -10,7 +12,6 @@ pipeline {
   }
 
   environment {
-      updated = false
       ARTEFACTS_SERVER = credentials ('deployment-server')
       ARTEFACTS_PATH="/media/img/coreos"
       ARTEFACTS_VERSIONS = "coreos.json"
