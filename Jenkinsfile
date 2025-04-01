@@ -1,3 +1,5 @@
+Boolean Updated = false;
+
 pipeline {
   triggers {
     cron(env.BRANCH_NAME == 'main' ? 'H H * * 3' : '')
@@ -24,7 +26,6 @@ pipeline {
 
         stage('Print environments variables') {
           steps {
-            script{ env.Updated = false }
             sh 'printenv | sort'
           }
         }
@@ -121,7 +122,7 @@ pipeline {
                   echo uploading $FORMAT.$ARTIFACT.$ARCH.$STREAM files
                   scp $files jenkins@$ARTEFACTS_SERVER:/media/img/coreos/
                 '''
-                script { env.Updated = true }
+                script { Updated = true }
               }
             }
           }
@@ -130,7 +131,7 @@ pipeline {
     }
 
     stage("Upload versions update") {
-      when { expression { env.Updated == true } }
+      when { expression { Updated == true } }
       steps {
         sshagent(credentials: ['Jenkins-Key']) {
           sh '''
