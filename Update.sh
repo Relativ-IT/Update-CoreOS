@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -xeuo pipefail
 function jqverbose { if $verbose; then echo $1; echo $2 | jq; fi; }
 
 stream="stable"
