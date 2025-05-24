@@ -10,7 +10,6 @@ pipeline {
   }
 
   environment {
-      ARTEFACTS_SERVER = credentials ('deployment-server')
       ARTEFACTS_PATH = "/media/img/coreos"
       ARTEFACTS_VERSIONS = "coreos.json"
   }
@@ -38,9 +37,9 @@ pipeline {
           steps {
             sh '''
               [ -d ~/.ssh ] || mkdir ~/.ssh && chmod 0700 ~/.ssh && touch ~/.ssh/known_hosts
-              if !(ssh-keygen -F $ARTEFACTS_SERVER)
+              if !(ssh-keygen -F $ARTEFACT_SERVER)
               then
-                ssh-keyscan -t ed25519 $ARTEFACTS_SERVER >> ~/.ssh/known_hosts
+                ssh-keyscan -t ed25519 $ARTEFACT_SERVER >> ~/.ssh/known_hosts
               fi
             '''
           }
@@ -56,7 +55,7 @@ pipeline {
           steps {
             sshagent(credentials: ['Jenkins-Key']) {
               sh '''
-                if scp jenkins@$ARTEFACTS_SERVER:/$ARTEFACTS_PATH/$ARTEFACTS_VERSIONS ./$ARTEFACTS_VERSIONS
+                if scp jenkins@$ARTEFACT_SERVER:/$ARTEFACTS_PATH/$ARTEFACTS_VERSIONS ./$ARTEFACTS_VERSIONS
                   then
                     echo "History found"
                   else
@@ -120,7 +119,7 @@ pipeline {
                 sh '''
                   files=$(cat $FORMAT.$ARTIFACT.$ARCH.$STREAM)
                   echo uploading $FORMAT.$ARTIFACT.$ARCH.$STREAM files
-                  scp $files jenkins@$ARTEFACTS_SERVER:/media/img/coreos/
+                  scp $files jenkins@$ARTEFACT_SERVER:/media/img/coreos/
                 '''
                 script { Updated = true }
               }
@@ -135,7 +134,7 @@ pipeline {
       steps {
         sshagent(credentials: ['Jenkins-Key']) {
           sh '''
-            scp ./$ARTEFACTS_VERSIONS jenkins@$ARTEFACTS_SERVER:/$ARTEFACTS_PATH/$ARTEFACTS_VERSIONS
+            scp ./$ARTEFACTS_VERSIONS jenkins@$ARTEFACT_SERVER:/$ARTEFACTS_PATH/$ARTEFACTS_VERSIONS
           '''
           archiveArtifacts ARTEFACTS_VERSIONS
         }
