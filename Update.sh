@@ -34,8 +34,7 @@ while [ $# -gt 0 ]; do
       printf "Error: Invalid argument : $1 \n"
       exit 1
   esac
-  shift
-  shift
+  shift 2
 done
 
 jqverbose "Looking for previous files :" "$(cat $history)"
@@ -97,7 +96,7 @@ then
   if [[ -f $downloads.part ]] && [[ $(wc -l < $downloads.part) == $filecounter ]]
   then # All files were successfully downloaded and checked
     mv $downloads.part $downloads
-    cat <<< $(jq --arg release $FCOSrelease '.'$stream'.'$arch'.'$artifact'.'$format' = $release' $history) > $history # Updating history file
+    jq --arg release $FCOSrelease '.'$stream'.'$arch'.'$artifact'.'$format' = $release' < $history > $history
     jqverbose "Updated versions :" "$(cat $history)"
   else
     echo "Something went wrong :/"
