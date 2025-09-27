@@ -96,7 +96,7 @@ then
   if [[ -f $downloads.part ]] && [[ $(wc -l < $downloads.part) == $filecounter ]]
   then # All files were successfully downloaded and checked
     mv $downloads.part $downloads
-    jq --arg release $FCOSrelease '.'$stream'.'$arch'.'$artifact'.'$format' = $release' < $history > $history
+    cat <<< $(jq --arg release $FCOSrelease '.'$stream'.'$arch'.'$artifact'.'$format' = $release' $history) > $history # Updating history file
     jqverbose "Updated versions :" "$(cat $history)"
   else
     echo "Something went wrong :/"
