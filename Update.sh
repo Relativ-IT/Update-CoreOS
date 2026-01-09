@@ -46,7 +46,7 @@ data=$(curl --no-progress-meter $data | jq .architectures.$arch.artifacts.$artif
 jqverbose "Looking for $arch $artifact release :" "$data"
 
 FCOSrelease=$(echo $data | jq --raw-output .release) # Filtering new release version
-FCOSversion=$(jq --raw-output .$stream.$arch.$artifact.[\"$format\"] $history) # Filtering current/last local version
+FCOSversion=$(jq --raw-output .$stream.$arch.$artifact.\"$format\" $history) # Filtering current/last local version
 
 if [ "${FCOSversion}" = "null" ]; then FCOSversion=0; fi; # If no previous version was found, set it to 0 for later comparison
 echo FCOS $arch $artifact release : $FCOSrelease / version : $FCOSversion
@@ -58,7 +58,7 @@ then
   downloads=$format.$artifact.$arch.$stream
   touch $downloads.part
   truncate -s 0 $downloads.part
-  files=$(echo $data | jq .formats.[\"$format\"]) # Filtering $format files version
+  files=$(echo $data | jq .formats.\"$format\") # Filtering $format files version
   jqverbose "Update found for $format files :" "$files"
 
   for file in $(echo $files | jq --raw-output 'keys[]') # For each file definition
@@ -96,7 +96,7 @@ then
   if [[ -f $downloads.part ]] && [[ $(wc -l < $downloads.part) == $filecounter ]]
   then # All files were successfully downloaded and checked
     mv $downloads.part $downloads
-    cat <<< $(jq --arg release $FCOSrelease '.'$stream'.'$arch'.'$artifact'.'[\"$format\"]' = $release' $history) > $history # Updating history file
+    cat <<< $(jq --arg release $FCOSrelease '.'$stream'.'$arch'.'$artifact'.'\"$format\"' = $release' $history) > $history # Updating history file
     jqverbose "Updated versions :" "$(cat $history)"
   else
     echo "Something went wrong :/"
