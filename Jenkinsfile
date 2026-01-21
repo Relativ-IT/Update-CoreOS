@@ -118,6 +118,7 @@ pipeline {
               sshagent(credentials: ['Jenkins-Key']) {
                 sh '''
                   files=$(cat $FORMAT.$ARTIFACT.$ARCH.$STREAM)
+                  echo backing up existing $FORMAT.$ARTIFACT.$ARCH.$STREAM files
                   ssh jenkins@$ARTEFACT_SERVER "sh -c 'for f in /media/img/coreos/*.$STREAM ; do mv -- \$f \${f%.$STREAM}.$STREAM.previous; done'"
                   echo uploading $FORMAT.$ARTIFACT.$ARCH.$STREAM files
                   scp $files jenkins@$ARTEFACT_SERVER:/media/img/coreos/
